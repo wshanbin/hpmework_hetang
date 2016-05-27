@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop-4.0.xsd">
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="com.mysql.jdbc.Driver" />
+		<property name="jdbcUrl" value="jdbc:mysql://localhost:3306/test" />
+		<property name="user" value="root" />
+		<property name="password" value="qlscadmin" />
+		<!-- 指定连接数据库连接池的最小连接数 -->
+		<property name="minPoolSize" value="10" />
+		<!-- 指定连接数据库连接池的最大连接数 -->
+		<property name="maxPoolSize" value="30" />
+	</bean>
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<!-- 配置数据源属性 -->
+		<property name="dataSource" ref="dataSource"></property>
+		<property name="configLocation">
+			<value>classpath:user-po.xml</value>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">
+					org.hibernate.dialect.MySQLDialect
+				</prop>
+
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.connection.release_mode">after_transaction</prop>
+				<prop key="hibernate.autoReconnect">true</prop>
+				<prop key="hibernate.enableSduDBManageMode">true</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="hibernateTemplate" class="org.springframework.orm.hibernate4.HibernateTemplate">
+		<property name="sessionFactory" ref="sessionFactory" />
+		<property name="fetchSize" value="20" />
+	</bean>
+	<bean id="userDaoImpl" class="com.struts.dao.impl.UserDaoImpl">
+		<property name="hibernateTemplate">
+			<ref bean="hibernateTemplate" />
+		</property>
+	</bean>
+	<bean id="userAction" class="com.struts.userAction.UserAction"
+		scope="prototype">
+		<property name="userDao" ref="userDaoImpl"></property>
+	</bean>
+	<!-- 配置Spring的声明式事务 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+	<!--使用1.5中的注解特性，对所有带有@Transactional beans进行事务逻辑处理！ -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	<!-- aop注解 -->
+</beans>
